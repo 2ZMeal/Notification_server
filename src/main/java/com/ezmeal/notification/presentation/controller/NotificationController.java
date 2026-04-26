@@ -53,8 +53,7 @@ public class NotificationController {
         service.deleteNotification(notificationId, userId);
         return ResponseEntity.ok(Map.of(
                 "success", true,
-                "message", "알림이 삭제되었습니다.",
-                "data", null
+                "message", "알림이 삭제되었습니다."
         ));
     }
 
