@@ -1,22 +1,27 @@
 package com.ezmeal.notification.application.service;
 
+import com.ezmeal.common.enums.Role;
+import com.ezmeal.common.exception.types.ForbiddenException;
+import com.ezmeal.common.exception.types.NotFoundException;
+import com.ezmeal.common.security.principal.CustomUserPrincipal;
 import com.ezmeal.notification.application.dto.request.AdminNotificationRequest;
 import com.ezmeal.notification.application.dto.response.NotificationResponse;
 import com.ezmeal.notification.domain.entity.Notification;
 import com.ezmeal.notification.domain.entity.NotificationChannel;
 import com.ezmeal.notification.domain.entity.NotificationType;
-import com.ezmeal.notification.domain.exception.NotificationException;
 import com.ezmeal.notification.domain.repository.NotificationRepository;
 import com.ezmeal.notification.infrastructure.client.UserClient;
 import com.ezmeal.notification.infrastructure.router.NotificationRouter;
-import com.ezmeal.notification.infrastructure.security.UserRoleCheck;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
-import org.mockito.MockedStatic;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 
 import java.util.List;
 import java.util.Optional;
@@ -43,23 +48,30 @@ class NotificationApplicationServiceTest {
     @Mock
     UserClient userClient;
 
+    @AfterEach
+    void tearDown() {
+        SecurityContextHolder.clearContext();
+    }
+
+    private void mockSecurityContext(UUID userId, Role role) {
+        CustomUserPrincipal principal = new CustomUserPrincipal(userId.toString(), role);
+        Authentication auth = new UsernamePasswordAuthenticationToken(principal, null, List.of());
+        SecurityContextHolder.getContext().setAuthentication(auth);
+    }
+
     @Test
     @DisplayName("getNotifications - 본인 알림 목록을 반환한다")
     void getNotifications_success() {
         UUID userId = UUID.randomUUID();
-        String userIdHeader = userId.toString();
+        mockSecurityContext(userId, Role.USER);
         Notification notification = Notification.create(userId, NotificationType.SHIPMENT_STARTED,
                 "배송 시작", NotificationChannel.EMAIL);
+        given(notificationRepository.findAllByUserIdAndDeletedAtIsNull(userId))
+                .willReturn(List.of(notification));
 
-        try (MockedStatic<UserRoleCheck> mock = mockStatic(UserRoleCheck.class)) {
-            mock.when(() -> UserRoleCheck.parseUserId(userIdHeader)).thenReturn(userId);
-            given(notificationRepository.findAllByUserIdAndDeletedAtIsNull(userId))
-                    .willReturn(List.of(notification));
+        List<NotificationResponse> result = service.getNotifications();
 
-            List<NotificationResponse> result = service.getNotifications(userIdHeader, "USER");
-
-            assertThat(result).hasSize(1);
-        }
+        assertThat(result).hasSize(1);
     }
 
     @Test
@@ -67,61 +79,44 @@ class NotificationApplicationServiceTest {
     void getNotification_marksAsRead() {
         UUID userId = UUID.randomUUID();
         UUID notificationId = UUID.randomUUID();
-        String userIdHeader = userId.toString();
+        mockSecurityContext(userId, Role.USER);
         Notification notification = Notification.create(userId, NotificationType.PAYMENT_SUCCESS,
                 "결제 완료", NotificationChannel.EMAIL);
+        given(notificationRepository.findByIdAndDeletedAtIsNull(notificationId))
+                .willReturn(Optional.of(notification));
 
-        try (MockedStatic<UserRoleCheck> mock = mockStatic(UserRoleCheck.class)) {
-            mock.when(() -> UserRoleCheck.parseUserId(userIdHeader)).thenReturn(userId);
-            given(notificationRepository.findByIdAndDeletedAtIsNull(notificationId))
-                    .willReturn(Optional.of(notification));
+        NotificationResponse result = service.getNotification(notificationId);
 
-            NotificationResponse result = service.getNotification(notificationId, userIdHeader);
-
-            assertThat(result.isRead()).isTrue();
-        }
+        assertThat(result.isRead()).isTrue();
     }
 
     @Test
-    @DisplayName("getNotification - 본인 알림이 아니면 NOTIFICATION_403 예외가 발생한다")
+    @DisplayName("getNotification - 본인 알림이 아니면 ForbiddenException이 발생한다")
     void getNotification_accessDenied() {
         UUID ownerId = UUID.randomUUID();
         UUID requesterId = UUID.randomUUID();
         UUID notificationId = UUID.randomUUID();
-        String userIdHeader = requesterId.toString();
+        mockSecurityContext(requesterId, Role.USER);
         Notification notification = Notification.create(ownerId, NotificationType.SHIPMENT_STARTED,
                 "배송 시작", NotificationChannel.EMAIL);
+        given(notificationRepository.findByIdAndDeletedAtIsNull(notificationId))
+                .willReturn(Optional.of(notification));
 
-        try (MockedStatic<UserRoleCheck> mock = mockStatic(UserRoleCheck.class)) {
-            mock.when(() -> UserRoleCheck.parseUserId(userIdHeader)).thenReturn(requesterId);
-            mock.when(() -> UserRoleCheck.requireOwner(requesterId, ownerId))
-                    .thenThrow(new NotificationException(
-                            com.ezmeal.notification.domain.exception.NotificationErrorCode.ACCESS_DENIED));
-            given(notificationRepository.findByIdAndDeletedAtIsNull(notificationId))
-                    .willReturn(Optional.of(notification));
-
-            assertThatThrownBy(() -> service.getNotification(notificationId, userIdHeader))
-                    .isInstanceOf(NotificationException.class)
-                    .hasMessageContaining("접근 권한이 없습니다");
-        }
+        assertThatThrownBy(() -> service.getNotification(notificationId))
+                .isInstanceOf(ForbiddenException.class);
     }
 
     @Test
-    @DisplayName("getNotification - 존재하지 않는 알림이면 NOTIFICATION_001 예외가 발생한다")
+    @DisplayName("getNotification - 존재하지 않는 알림이면 NotFoundException이 발생한다")
     void getNotification_notFound() {
         UUID userId = UUID.randomUUID();
         UUID notificationId = UUID.randomUUID();
-        String userIdHeader = userId.toString();
+        mockSecurityContext(userId, Role.USER);
+        given(notificationRepository.findByIdAndDeletedAtIsNull(notificationId))
+                .willReturn(Optional.empty());
 
-        try (MockedStatic<UserRoleCheck> mock = mockStatic(UserRoleCheck.class)) {
-            mock.when(() -> UserRoleCheck.parseUserId(userIdHeader)).thenReturn(userId);
-            given(notificationRepository.findByIdAndDeletedAtIsNull(notificationId))
-                    .willReturn(Optional.empty());
-
-            assertThatThrownBy(() -> service.getNotification(notificationId, userIdHeader))
-                    .isInstanceOf(NotificationException.class)
-                    .hasMessageContaining("알림을 찾을 수 없습니다");
-        }
+        assertThatThrownBy(() -> service.getNotification(notificationId))
+                .isInstanceOf(NotFoundException.class);
     }
 
     @Test
@@ -129,74 +124,60 @@ class NotificationApplicationServiceTest {
     void deleteNotification_success() {
         UUID userId = UUID.randomUUID();
         UUID notificationId = UUID.randomUUID();
-        String userIdHeader = userId.toString();
+        mockSecurityContext(userId, Role.USER);
         Notification notification = Notification.create(userId, NotificationType.CS_ANSWERED,
                 "문의 답변", NotificationChannel.SLACK);
+        given(notificationRepository.findByIdAndDeletedAtIsNull(notificationId))
+                .willReturn(Optional.of(notification));
 
-        try (MockedStatic<UserRoleCheck> mock = mockStatic(UserRoleCheck.class)) {
-            mock.when(() -> UserRoleCheck.parseUserId(userIdHeader)).thenReturn(userId);
-            given(notificationRepository.findByIdAndDeletedAtIsNull(notificationId))
-                    .willReturn(Optional.of(notification));
+        service.deleteNotification(notificationId);
 
-            service.deleteNotification(notificationId, userIdHeader);
-
-            assertThat(notification.isDeleted()).isTrue();
-        }
+        assertThat(notification.isDeleted()).isTrue();
     }
 
     @Test
-    @DisplayName("deleteNotification - 본인 알림이 아니면 NOTIFICATION_403 예외가 발생한다")
+    @DisplayName("deleteNotification - 본인 알림이 아니면 ForbiddenException이 발생한다")
     void deleteNotification_accessDenied() {
         UUID ownerId = UUID.randomUUID();
         UUID requesterId = UUID.randomUUID();
         UUID notificationId = UUID.randomUUID();
-        String userIdHeader = requesterId.toString();
+        mockSecurityContext(requesterId, Role.USER);
         Notification notification = Notification.create(ownerId, NotificationType.SHIPMENT_STARTED,
                 "배송 시작", NotificationChannel.EMAIL);
+        given(notificationRepository.findByIdAndDeletedAtIsNull(notificationId))
+                .willReturn(Optional.of(notification));
 
-        try (MockedStatic<UserRoleCheck> mock = mockStatic(UserRoleCheck.class)) {
-            mock.when(() -> UserRoleCheck.parseUserId(userIdHeader)).thenReturn(requesterId);
-            mock.when(() -> UserRoleCheck.requireOwner(requesterId, ownerId))
-                    .thenThrow(new NotificationException(
-                            com.ezmeal.notification.domain.exception.NotificationErrorCode.ACCESS_DENIED));
-            given(notificationRepository.findByIdAndDeletedAtIsNull(notificationId))
-                    .willReturn(Optional.of(notification));
-
-            assertThatThrownBy(() -> service.deleteNotification(notificationId, userIdHeader))
-                    .isInstanceOf(NotificationException.class)
-                    .hasMessageContaining("접근 권한이 없습니다");
-        }
+        assertThatThrownBy(() -> service.deleteNotification(notificationId))
+                .isInstanceOf(ForbiddenException.class);
     }
 
     @Test
     @DisplayName("sendAdminNotification - 단일 유저 발송 시 sentCount=1을 반환한다")
     void sendAdminNotification_singleUser() {
         UUID targetUserId = UUID.randomUUID();
+        mockSecurityContext(UUID.randomUUID(), Role.ADMIN);
         AdminNotificationRequest request = mock(AdminNotificationRequest.class);
         given(request.getUserId()).willReturn(targetUserId);
         given(request.getMessage()).willReturn("공지사항입니다.");
         given(request.getChannel()).willReturn(NotificationChannel.EMAIL);
         given(notificationRepository.save(any())).willAnswer(inv -> inv.getArgument(0));
 
-        try (MockedStatic<UserRoleCheck> mock = mockStatic(UserRoleCheck.class)) {
-            int result = service.sendAdminNotification(request, "MASTER");
+        int result = service.sendAdminNotification(request);
 
-            assertThat(result).isEqualTo(1);
-            verify(notificationRouter, times(1)).route(any());
-        }
+        assertThat(result).isEqualTo(1);
+        verify(notificationRouter, times(1)).route(any());
     }
 
     @Test
     @DisplayName("sendAdminNotification - userId=null(전체 발송 미구현)이면 sentCount=0을 반환한다")
     void sendAdminNotification_allUsers_todoReturnsZero() {
+        mockSecurityContext(UUID.randomUUID(), Role.ADMIN);
         AdminNotificationRequest request = mock(AdminNotificationRequest.class);
         given(request.getUserId()).willReturn(null);
 
-        try (MockedStatic<UserRoleCheck> mock = mockStatic(UserRoleCheck.class)) {
-            int result = service.sendAdminNotification(request, "MASTER");
+        int result = service.sendAdminNotification(request);
 
-            assertThat(result).isEqualTo(0);
-            verify(notificationRouter, never()).route(any());
-        }
+        assertThat(result).isEqualTo(0);
+        verify(notificationRouter, never()).route(any());
     }
 }
