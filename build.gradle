@@ -13,6 +13,14 @@ java {
 
 repositories {
     mavenCentral()
+    maven {
+        name = "GitHubPackages"
+        url = uri("https://maven.pkg.github.com/2ZMeal/Common_server")
+        credentials {
+            username = findProperty("gpr.user") ?: System.getenv("GPR_USER")
+            password = findProperty("gpr.token") ?: System.getenv("GPR_TOKEN")
+        }
+    }
 }
 
 dependencyManagement {
@@ -57,8 +65,12 @@ dependencies {
     // Email
     implementation 'org.springframework.boot:spring-boot-starter-mail'
 
+    // Common Server
+    implementation 'com.ezmeal:common:0.0.1'
+
     // Test
     testImplementation 'org.springframework.boot:spring-boot-starter-test'
+    testImplementation 'org.springframework.security:spring-security-test'
 }
 
 tasks.named('test') {
