@@ -22,7 +22,7 @@ public class KafkaConfig {
     @Value("${spring.kafka.bootstrap-servers}")
     private String bootstrapServers;
 
-    @Value("${spring.kafka.consumer.group-id:notification-service}")
+    @Value("${spring.kafka.consumer.group-id:notification-group}")
     private String groupId;
 
     // ── ObjectMapper ──────────────────────────────────────────────────────────
