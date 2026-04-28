@@ -7,7 +7,9 @@ import com.ezmeal.notification.infrastructure.channel.SlackChannelSender;
 import com.ezmeal.notification.infrastructure.client.UserClient;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
+import org.springframework.util.StringUtils;
 
 import java.util.Set;
 
@@ -29,10 +31,22 @@ public class NotificationRouter {
     private final SlackChannelSender slackSender;
     private final UserClient userClient;
 
+    // TODO: [테스트 전용] 로컬 환경에서 user-service 없이 이메일 발송 검증용
+    //       운영 배포 전 반드시 제거할 것:
+    //       1. 이 @Value 필드 삭제
+    //       2. route() 내 삼항 연산자를 userClient.getUserEmail(...)으로 단순화
+    //       3. application.yaml의 notification.test.target-email 설정 제거
+    @Value("${notification.test.target-email:}")
+    private String testTargetEmail;
+
     public void route(Notification notification) {
         if (EMAIL_TYPES.contains(notification.getType())) {
             try {
-                String email = userClient.getUserEmail(notification.getUserId());
+                // TODO: [테스트 전용] 운영 시 아래 한 줄로 교체
+                //       String email = userClient.getUserEmail(notification.getUserId());
+                String email = StringUtils.hasText(testTargetEmail)
+                        ? testTargetEmail
+                        : userClient.getUserEmail(notification.getUserId());
                 emailSender.send(notification, email);
             } catch (Exception e) {
                 log.error("[EMAIL-FAIL] userId={}, type={}, error={}",

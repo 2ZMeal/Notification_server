@@ -41,7 +41,7 @@ public class NotificationController {
     }
 
     // 어드민 수동 발송 (MASTER 전용)
-    @PostMapping("/admin/notifications")
+    @PostMapping("/notifications")
     public ResponseEntity<CommonApiResponse<Integer>> sendAdminNotification(
             @RequestBody @Valid AdminNotificationRequest request) {
         int sentCount = service.sendAdminNotification(request);

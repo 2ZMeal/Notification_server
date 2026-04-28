@@ -30,6 +30,9 @@ dependencyManagement {
 }
 
 dependencies {
+    // Common Server
+    implementation 'com.ezmeal:common:0.0.2'
+
     // Web
     implementation 'org.springframework.boot:spring-boot-starter-web'
 
@@ -64,9 +67,6 @@ dependencies {
 
     // Email
     implementation 'org.springframework.boot:spring-boot-starter-mail'
-
-    // Common Server
-    implementation 'com.ezmeal:common:0.0.1'
 
     // Test
     testImplementation 'org.springframework.boot:spring-boot-starter-test'
