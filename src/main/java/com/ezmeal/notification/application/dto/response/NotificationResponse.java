@@ -3,6 +3,7 @@ package com.ezmeal.notification.application.dto.response;
 import com.ezmeal.notification.domain.entity.Notification;
 import com.ezmeal.notification.domain.entity.NotificationChannel;
 import com.ezmeal.notification.domain.entity.NotificationType;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Getter;
 
 import java.time.LocalDateTime;
@@ -15,6 +16,7 @@ public class NotificationResponse {
     private final NotificationType type;
     private final String message;
     private final NotificationChannel channel;
+    @JsonProperty("isRead")
     private final boolean isRead;
     private final LocalDateTime sentAt;
     private final LocalDateTime createdAt;
