@@ -3,6 +3,7 @@ package com.ezmeal.notification.application.service;
 import com.ezmeal.common.enums.Role;
 import com.ezmeal.common.exception.types.ForbiddenException;
 import com.ezmeal.common.exception.types.NotFoundException;
+import com.ezmeal.common.exception.types.UnauthorizedException;
 import com.ezmeal.common.security.principal.CustomUserPrincipal;
 import com.ezmeal.notification.application.dto.request.AdminNotificationRequest;
 import com.ezmeal.notification.application.dto.response.NotificationResponse;
@@ -79,7 +80,11 @@ public class NotificationApplicationService {
 
     private CustomUserPrincipal getCurrentPrincipal() {
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-        return (CustomUserPrincipal) auth.getPrincipal();
+        if (auth == null || !auth.isAuthenticated()
+                || !(auth.getPrincipal() instanceof CustomUserPrincipal principal)) {
+            throw new UnauthorizedException(NotificationErrorCode.UNAUTHORIZED);
+        }
+        return principal;
     }
 
     private void requireAdmin(Role role) {
