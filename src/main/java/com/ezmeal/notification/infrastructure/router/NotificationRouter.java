@@ -7,11 +7,15 @@ import com.ezmeal.notification.infrastructure.channel.SlackChannelSender;
 import com.ezmeal.notification.infrastructure.client.UserClient;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
-import org.springframework.util.StringUtils;
 
 import java.util.Set;
+// [테스트 전용] local 프로필 이메일 우회 시 활성화
+// import jakarta.annotation.PostConstruct;
+// import org.springframework.beans.factory.annotation.Value;
+// import org.springframework.core.env.Environment;
+// import org.springframework.util.StringUtils;
+// import java.util.Arrays;
 
 @Component
 @RequiredArgsConstructor
@@ -30,23 +34,30 @@ public class NotificationRouter {
     private final EmailChannelSender emailSender;
     private final SlackChannelSender slackSender;
     private final UserClient userClient;
-
-    // TODO: [테스트 전용] 로컬 환경에서 user-service 없이 이메일 발송 검증용
-    //       운영 배포 전 반드시 제거할 것:
-    //       1. 이 @Value 필드 삭제
-    //       2. route() 내 삼항 연산자를 userClient.getUserEmail(...)으로 단순화
-    //       3. application.yaml의 notification.test.target-email 설정 제거
-    @Value("${notification.test.target-email:}")
-    private String testTargetEmail;
+    // [테스트 전용] local 프로필 이메일 우회 시 활성화
+    // private final Environment environment;
+    // @Value("${notification.test.target-email:}")
+    // private String testTargetEmail;
+    // @PostConstruct
+    // void validateTestEmailConfig() {
+    //     if (StringUtils.hasText(testTargetEmail)) {
+    //         boolean isSafeProfile = Arrays.stream(environment.getActiveProfiles())
+    //                 .anyMatch(p -> p.equals("local") || p.equals("test"));
+    //         if (!isSafeProfile) {
+    //             throw new IllegalStateException(
+    //                     "notification.test.target-email은 local/test 프로필에서만 허용됩니다.");
+    //         }
+    //     }
+    // }
 
     public void route(Notification notification) {
         if (EMAIL_TYPES.contains(notification.getType())) {
             try {
-                // TODO: [테스트 전용] 운영 시 아래 한 줄로 교체
-                //       String email = userClient.getUserEmail(notification.getUserId());
-                String email = StringUtils.hasText(testTargetEmail)
-                        ? testTargetEmail
-                        : userClient.getUserEmail(notification.getUserId());
+                String email = userClient.getUser(notification.getUserId()).getData().getEmail();
+                // [테스트 전용] local 프로필 이메일 우회 시 아래로 교체
+                // String email = StringUtils.hasText(testTargetEmail)
+                //         ? testTargetEmail
+                //         : userClient.getUser(notification.getUserId()).getData().getEmail();
                 emailSender.send(notification, email);
             } catch (Exception e) {
                 log.error("[EMAIL-FAIL] userId={}, type={}, error={}",
