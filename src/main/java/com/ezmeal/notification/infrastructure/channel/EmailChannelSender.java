@@ -10,6 +10,8 @@ import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.stereotype.Component;
 
+import org.springframework.web.util.HtmlUtils;
+
 import java.time.LocalDateTime;
 import java.util.Map;
 
@@ -108,6 +110,6 @@ public class EmailChannelSender implements ChannelSender {
                   </table>
                 </body>
                 </html>
-                """.formatted(title, notification.getMessage());
+                """.formatted(title, HtmlUtils.htmlEscape(notification.getMessage()));
     }
 }
