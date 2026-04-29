@@ -23,7 +23,7 @@ public class ShipmentEventConsumerImpl implements ShipmentEventConsumer {
     private final NotificationRepository notificationRepository;
     private final NotificationRouter notificationRouter;
 
-    @KafkaListener(topics = "shipment.started", groupId = "notification-service")
+    @KafkaListener(topics = "shipment.started", groupId = "${spring.kafka.consumer.group-id}")
     @Override
     public void onShipmentStarted(String message) {
         try {
@@ -40,7 +40,7 @@ public class ShipmentEventConsumerImpl implements ShipmentEventConsumer {
         }
     }
 
-    @KafkaListener(topics = "shipment.delivered", groupId = "notification-service")
+    @KafkaListener(topics = "shipment.delivered", groupId = "${spring.kafka.consumer.group-id}")
     @Override
     public void onShipmentDelivered(String message) {
         try {

@@ -24,7 +24,7 @@ public class PaymentEventConsumerImpl implements PaymentEventConsumer {
     private final NotificationRepository notificationRepository;
     private final NotificationRouter notificationRouter;
 
-    @KafkaListener(topics = "payment.success", groupId = "notification-service")
+    @KafkaListener(topics = "payment.success", groupId = "${spring.kafka.consumer.group-id}")
     @Override
     public void onPaymentSuccess(String message) {
         try {
@@ -41,7 +41,7 @@ public class PaymentEventConsumerImpl implements PaymentEventConsumer {
         }
     }
 
-    @KafkaListener(topics = "payment.failed", groupId = "notification-service")
+    @KafkaListener(topics = "payment.failed", groupId = "${spring.kafka.consumer.group-id}")
     @Override
     public void onPaymentFailed(String message) {
         try {
@@ -58,7 +58,7 @@ public class PaymentEventConsumerImpl implements PaymentEventConsumer {
         }
     }
 
-    @KafkaListener(topics = "payment.cancelled", groupId = "notification-service")
+    @KafkaListener(topics = "payment.cancelled", groupId = "${spring.kafka.consumer.group-id}")
     @Override
     public void onPaymentCancelled(String message) {
         try {

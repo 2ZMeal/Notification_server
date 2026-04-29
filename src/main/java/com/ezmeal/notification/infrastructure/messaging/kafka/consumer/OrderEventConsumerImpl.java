@@ -23,7 +23,7 @@ public class OrderEventConsumerImpl implements OrderEventConsumer {
     private final NotificationRepository notificationRepository;
     private final NotificationRouter notificationRouter;
 
-    @KafkaListener(topics = "order.status", groupId = "notification-service")
+    @KafkaListener(topics = "order.status", groupId = "${spring.kafka.consumer.group-id}")
     @Override
     public void onOrderStatus(String message) {
         try {
@@ -40,7 +40,7 @@ public class OrderEventConsumerImpl implements OrderEventConsumer {
         }
     }
 
-    @KafkaListener(topics = "order.reviewed", groupId = "notification-service")
+    @KafkaListener(topics = "order.reviewed", groupId = "${spring.kafka.consumer.group-id}")
     @Override
     public void onOrderReviewed(String message) {
         try {

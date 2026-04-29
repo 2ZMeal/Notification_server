@@ -22,7 +22,7 @@ public class UserEventConsumerImpl implements UserEventConsumer {
     private final NotificationRepository notificationRepository;
     private final NotificationRouter notificationRouter;
 
-    @KafkaListener(topics = "user.created", groupId = "notification-service")
+    @KafkaListener(topics = "user.created", groupId = "${spring.kafka.consumer.group-id}")
     @Override
     public void onUserCreated(String message) {
         try {
