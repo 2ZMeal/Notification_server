@@ -92,7 +92,7 @@ class NotificationControllerTest {
                 }
                 """.formatted(UUID.randomUUID());
 
-        mockMvc.perform(post("/api/v1/admin/notifications")
+        mockMvc.perform(post("/api/v1/notifications")
                         .with(csrf())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(requestBody))
