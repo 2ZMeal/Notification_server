@@ -1,24 +1,19 @@
 package com.ezmeal.notification.domain.entity;
 
+import com.ezmeal.common.entity.BaseEntity;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
-import org.springframework.data.annotation.CreatedBy;
-import org.springframework.data.annotation.CreatedDate;
-import org.springframework.data.annotation.LastModifiedBy;
-import org.springframework.data.annotation.LastModifiedDate;
-import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 import java.time.LocalDateTime;
 import java.util.UUID;
 
 @Entity
 @Table(name = "p_notification")
-@EntityListeners(AuditingEntityListener.class)
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
-public class Notification {
+public class Notification extends BaseEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
@@ -43,23 +38,6 @@ public class Notification {
 
     private LocalDateTime sentAt;
 
-    @CreatedDate
-    @Column(updatable = false)
-    private LocalDateTime createdAt;
-
-    @CreatedBy
-    @Column(updatable = false)
-    private String createdBy;
-
-    @LastModifiedDate
-    private LocalDateTime updatedAt;
-
-    @LastModifiedBy
-    private String updatedBy;
-
-    private LocalDateTime deletedAt;
-    private String deletedBy;
-
     public static Notification create(UUID userId, NotificationType type,
                                       String message, NotificationChannel channel) {
         Notification n = new Notification();
@@ -79,8 +57,7 @@ public class Notification {
     }
 
     public void softDelete(String deletedBy) {
-        this.deletedAt = LocalDateTime.now();
-        this.deletedBy = deletedBy;
+        super.delete(deletedBy);
     }
 
     public boolean isDeleted() {

@@ -24,7 +24,7 @@ public class CsEventConsumerImpl implements CsEventConsumer {
     private final NotificationRepository notificationRepository;
     private final NotificationRouter notificationRouter;
 
-    @KafkaListener(topics = "cs.created", groupId = "notification-service")
+    @KafkaListener(topics = "cs.created", groupId = "${spring.kafka.consumer.group-id}")
     @Override
     public void onCsCreated(String message) {
         try {
@@ -41,7 +41,7 @@ public class CsEventConsumerImpl implements CsEventConsumer {
         }
     }
 
-    @KafkaListener(topics = "cs.updated", groupId = "notification-service")
+    @KafkaListener(topics = "cs.updated", groupId = "${spring.kafka.consumer.group-id}")
     @Override
     public void onCsUpdated(String message) {
         try {
@@ -58,7 +58,7 @@ public class CsEventConsumerImpl implements CsEventConsumer {
         }
     }
 
-    @KafkaListener(topics = "cs.answered", groupId = "notification-service")
+    @KafkaListener(topics = "cs.answered", groupId = "${spring.kafka.consumer.group-id}")
     @Override
     public void onCsAnswered(String message) {
         try {

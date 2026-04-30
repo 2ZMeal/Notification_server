@@ -1,16 +1,21 @@
 package com.ezmeal.notification.application.service;
 
+import com.ezmeal.common.enums.Role;
+import com.ezmeal.common.exception.types.ForbiddenException;
+import com.ezmeal.common.exception.types.NotFoundException;
+import com.ezmeal.common.exception.types.UnauthorizedException;
+import com.ezmeal.common.security.principal.CustomUserPrincipal;
 import com.ezmeal.notification.application.dto.request.AdminNotificationRequest;
 import com.ezmeal.notification.application.dto.response.NotificationResponse;
 import com.ezmeal.notification.domain.entity.Notification;
 import com.ezmeal.notification.domain.entity.NotificationType;
 import com.ezmeal.notification.domain.exception.NotificationErrorCode;
-import com.ezmeal.notification.domain.exception.NotificationException;
 import com.ezmeal.notification.domain.repository.NotificationRepository;
 import com.ezmeal.notification.infrastructure.client.UserClient;
 import com.ezmeal.notification.infrastructure.router.NotificationRouter;
-import com.ezmeal.notification.infrastructure.security.UserRoleCheck;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -28,35 +33,32 @@ public class NotificationApplicationService {
 
     // GET /api/v1/notifications
     @Transactional(readOnly = true)
-    public List<NotificationResponse> getNotifications(String userIdHeader, String roleHeader) {
-        UserRoleCheck.requireAuthenticated(userIdHeader);
-        UUID userId = UserRoleCheck.parseUserId(userIdHeader);
+    public List<NotificationResponse> getNotifications() {
+        UUID userId = UUID.fromString(getCurrentPrincipal().getUserId());
         return notificationRepository.findAllByUserIdAndDeletedAtIsNull(userId)
                 .stream().map(NotificationResponse::from).toList();
     }
 
     // GET /api/v1/notifications/{notificationId}
-    public NotificationResponse getNotification(UUID notificationId, String userIdHeader) {
-        UserRoleCheck.requireAuthenticated(userIdHeader);
-        UUID userId = UserRoleCheck.parseUserId(userIdHeader);
+    public NotificationResponse getNotification(UUID notificationId) {
+        UUID userId = UUID.fromString(getCurrentPrincipal().getUserId());
         Notification notification = findByIdOrThrow(notificationId);
-        UserRoleCheck.requireOwner(userId, notification.getUserId());
+        requireOwner(userId, notification.getUserId());
         notification.markAsRead();   // 단건 조회 시 자동 읽음
         return NotificationResponse.from(notification);
     }
 
     // DELETE /api/v1/notifications/{notificationId}
-    public void deleteNotification(UUID notificationId, String userIdHeader) {
-        UserRoleCheck.requireAuthenticated(userIdHeader);
-        UUID userId = UserRoleCheck.parseUserId(userIdHeader);
+    public void deleteNotification(UUID notificationId) {
+        UUID userId = UUID.fromString(getCurrentPrincipal().getUserId());
         Notification notification = findByIdOrThrow(notificationId);
-        UserRoleCheck.requireOwner(userId, notification.getUserId());
+        requireOwner(userId, notification.getUserId());
         notification.softDelete(userId.toString());
     }
 
     // POST /api/v1/admin/notifications
-    public int sendAdminNotification(AdminNotificationRequest request, String roleHeader) {
-        UserRoleCheck.requireMaster(roleHeader);
+    public int sendAdminNotification(AdminNotificationRequest request) {
+        requireAdmin(getCurrentPrincipal().getRole());
 
         if (request.getUserId() != null) {
             // 단일 유저 발송
@@ -76,8 +78,29 @@ public class NotificationApplicationService {
         return 0;
     }
 
+    private CustomUserPrincipal getCurrentPrincipal() {
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        if (auth == null || !auth.isAuthenticated()
+                || !(auth.getPrincipal() instanceof CustomUserPrincipal principal)) {
+            throw new UnauthorizedException(NotificationErrorCode.UNAUTHORIZED);
+        }
+        return principal;
+    }
+
+    private void requireAdmin(Role role) {
+        if (role != Role.ADMIN) {
+            throw new ForbiddenException(NotificationErrorCode.ACCESS_DENIED);
+        }
+    }
+
+    private void requireOwner(UUID requesterId, UUID ownerId) {
+        if (!ownerId.equals(requesterId)) {
+            throw new ForbiddenException(NotificationErrorCode.ACCESS_DENIED);
+        }
+    }
+
     private Notification findByIdOrThrow(UUID id) {
         return notificationRepository.findByIdAndDeletedAtIsNull(id)
-                .orElseThrow(() -> new NotificationException(NotificationErrorCode.NOTIFICATION_NOT_FOUND));
+                .orElseThrow(() -> new NotFoundException(NotificationErrorCode.NOTIFICATION_NOT_FOUND));
     }
 }

@@ -23,7 +23,7 @@ public class CompanyEventConsumerImpl implements CompanyEventConsumer {
     private final NotificationRepository notificationRepository;
     private final NotificationRouter notificationRouter;
 
-    @KafkaListener(topics = "company.created", groupId = "notification-service")
+    @KafkaListener(topics = "company.created", groupId = "${spring.kafka.consumer.group-id}")
     @Override
     public void onCompanyCreated(String message) {
         try {
@@ -40,7 +40,7 @@ public class CompanyEventConsumerImpl implements CompanyEventConsumer {
         }
     }
 
-    @KafkaListener(topics = "company.deleted", groupId = "notification-service")
+    @KafkaListener(topics = "company.deleted", groupId = "${spring.kafka.consumer.group-id}")
     @Override
     public void onCompanyDeleted(String message) {
         try {

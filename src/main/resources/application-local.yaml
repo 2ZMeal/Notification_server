@@ -1,0 +1,6 @@
+spring:
+  config:
+    import: "optional:configserver:"   # Config Server 없이도 기동 허용
+  cloud:
+    config:
+      uri: http://localhost:8888        # 로컬에서 Docker Config Server 접근

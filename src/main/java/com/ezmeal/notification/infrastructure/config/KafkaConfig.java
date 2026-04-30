@@ -4,28 +4,14 @@ import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
-import org.apache.kafka.clients.consumer.ConsumerConfig;
-import org.apache.kafka.common.serialization.StringDeserializer;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.kafka.config.ConcurrentKafkaListenerContainerFactory;
-import org.springframework.kafka.core.ConsumerFactory;
-import org.springframework.kafka.core.DefaultKafkaConsumerFactory;
-
-import java.util.HashMap;
-import java.util.Map;
 
 @Configuration
 public class KafkaConfig {
 
-    @Value("${spring.kafka.bootstrap-servers}")
-    private String bootstrapServers;
-
-    @Value("${spring.kafka.consumer.group-id:notification-group}")
-    private String groupId;
-
     // ── ObjectMapper ──────────────────────────────────────────────────────────
+    // 7개 Kafka Consumer가 수동 JSON 역직렬화(String → Payload)에 사용
 
     @Bean
     public ObjectMapper objectMapper() {
@@ -36,30 +22,9 @@ public class KafkaConfig {
     }
 
     // ── Consumer ──────────────────────────────────────────────────────────────
-
-    /**
-     * Kafka Consumer 객체를 생성해내는 로직
-     * */
-    @Bean
-    public ConsumerFactory<String, String> consumerFactory() {
-        Map<String, Object> config = new HashMap<>();
-        config.put(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, bootstrapServers);
-        config.put(ConsumerConfig.GROUP_ID_CONFIG, groupId);
-        config.put(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class);
-        config.put(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class);
-        config.put(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, "earliest");
-        return new DefaultKafkaConsumerFactory<>(config);
-    }
-
-    /**
-     * 실제 @KafkaListner 에 쓰이는 엔진
-     * */
-    @Bean
-    public ConcurrentKafkaListenerContainerFactory<String, String> kafkaListenerContainerFactory(
-            ConsumerFactory<String, String> consumerFactory) {
-        ConcurrentKafkaListenerContainerFactory<String, String> factory =
-                new ConcurrentKafkaListenerContainerFactory<>();
-        factory.setConsumerFactory(consumerFactory);
-        return factory;
-    }
+    // ConsumerFactory는 Spring Boot 자동설정이 notification-service.yml 값으로 생성
+    //   spring.kafka.bootstrap-servers, consumer.key/value-deserializer,
+    //   consumer.group-id, consumer.auto-offset-reset
+    // kafkaListenerContainerFactory는 common의 KafkaConsumerConfig가 제공
+    //   (KafkaSecurityInterceptor 포함)
 }

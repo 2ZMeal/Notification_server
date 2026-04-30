@@ -24,7 +24,7 @@ public class ProductEventConsumerImpl implements ProductEventConsumer {
     private final NotificationRepository notificationRepository;
     private final NotificationRouter notificationRouter;
 
-    @KafkaListener(topics = "product.created", groupId = "notification-service")
+    @KafkaListener(topics = "product.created", groupId = "${spring.kafka.consumer.group-id}")
     @Override
     public void onProductCreated(String message) {
         try {
@@ -41,7 +41,7 @@ public class ProductEventConsumerImpl implements ProductEventConsumer {
         }
     }
 
-    @KafkaListener(topics = "product.deleted", groupId = "notification-service")
+    @KafkaListener(topics = "product.deleted", groupId = "${spring.kafka.consumer.group-id}")
     @Override
     public void onProductDeleted(String message) {
         try {
@@ -57,7 +57,7 @@ public class ProductEventConsumerImpl implements ProductEventConsumer {
         }
     }
 
-    @KafkaListener(topics = "dailyMenu.created", groupId = "notification-service")
+    @KafkaListener(topics = "dailyMenu.created", groupId = "${spring.kafka.consumer.group-id}")
     @Override
     public void onDailyMenuCreated(String message) {
         try {

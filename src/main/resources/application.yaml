@@ -10,31 +10,3 @@ spring:
       retry:
         max-attempts: 3
         initial-interval: 1000
-
-  # Kafka Consumer (deserializer는 Config Server에서 관리하지 않는 앱 레벨 설정)
-  kafka:
-    consumer:
-      group-id: notification-group
-      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
-      value-deserializer: org.apache.kafka.common.serialization.StringDeserializer
-
-  # Mail (Gmail SMTP — Config Server에서 관리하지 않는 앱 레벨 설정)
-  mail:
-    host: smtp.gmail.com
-    port: 587
-    username: ${MAIL_USERNAME}
-    password: ${MAIL_PASSWORD}
-    from: ${MAIL_FROM:noreply@ezmeal.com}
-    properties:
-      mail:
-        smtp:
-          auth: true
-          starttls:
-            enable: true
-
-  # Jackson (MSA 환경 안전 설정 — Config Server에서 관리하지 않는 앱 레벨 설정)
-  jackson:
-    deserialization:
-      fail-on-unknown-properties: false   # 모르는 필드 무시
-    serialization:
-      write-dates-as-timestamps: false    # LocalDateTime → ISO-8601 문자열
