@@ -3,24 +3,4 @@ spring:
     import: "optional:configserver:"   # Config Server 없이도 기동 허용
   cloud:
     config:
-      uri: http://localhost:8888
-
-  datasource:
-    url: jdbc:postgresql://localhost:5432/notification_db
-    username: notification_user
-    password: ${NOTIFICATION_DB_PASSWORD:1234}
-
-  kafka:
-    bootstrap-servers: localhost:9092
-
-eureka:
-  client:
-    enabled: false                     # 로컬에서 Eureka 불필요
-
-server:
-  port: 19088
-
-# [테스트 전용] user-service 없이 이메일 발송 검증 시 주석 해제 후 사용
-# notification:
-#   test:
-#     target-email: ${TEST_TARGET_EMAIL:}
+      uri: http://localhost:8888        # 로컬에서 Docker Config Server 접근

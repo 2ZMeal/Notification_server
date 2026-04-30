@@ -34,21 +34,25 @@ public class NotificationRouter {
     private final EmailChannelSender emailSender;
     private final SlackChannelSender slackSender;
     private final UserClient userClient;
-    // [테스트 전용] local 프로필 이메일 우회 시 활성화
-    // private final Environment environment;
-    // @Value("${notification.test.target-email:}")
-    // private String testTargetEmail;
-    // @PostConstruct
-    // void validateTestEmailConfig() {
-    //     if (StringUtils.hasText(testTargetEmail)) {
-    //         boolean isSafeProfile = Arrays.stream(environment.getActiveProfiles())
-    //                 .anyMatch(p -> p.equals("local") || p.equals("test"));
-    //         if (!isSafeProfile) {
-    //             throw new IllegalStateException(
-    //                     "notification.test.target-email은 local/test 프로필에서만 허용됩니다.");
-    //         }
-    //     }
-    // }
+
+    /*
+     [테스트 전용] local 프로필 설정시 활성화
+     private final Environment environment;
+     @Value("${notification.test.target-email:}")
+     private String testTargetEmail;
+     @PostConstruct
+     void validateTestEmailConfig() {
+         if (StringUtils.hasText(testTargetEmail)) {
+             boolean isSafeProfile = Arrays.stream(environment.getActiveProfiles())
+                     .anyMatch(p -> p.equals("local") || p.equals("test"));
+             if (!isSafeProfile) {
+                 throw new IllegalStateException(
+                         "notification.test.target-email은 local/test 프로필에서만 허용됩니다.");
+             }
+         }
+     }
+     */
+
 
     public void route(Notification notification) {
         if (EMAIL_TYPES.contains(notification.getType())) {
