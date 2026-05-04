@@ -31,3 +31,5 @@ out/
 /.nb-gradle/
 ### VS Code ###
 .vscode/
+### Claude ###
+docs/
