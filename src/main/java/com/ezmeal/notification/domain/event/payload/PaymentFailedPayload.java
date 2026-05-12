@@ -3,15 +3,13 @@ package com.ezmeal.notification.domain.event.payload;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
-import java.time.LocalDateTime;
+import com.ezmeal.common.message.DomainEvent;
+
 import java.util.UUID;
 
 @Getter
 @NoArgsConstructor
-public class PaymentFailedPayload {
-    private UUID eventId;
-    private String eventType;
-    private LocalDateTime occurredAt;
+public class PaymentFailedPayload implements DomainEvent {
     private UUID orderId;
     private UUID userId;
     private String reason;

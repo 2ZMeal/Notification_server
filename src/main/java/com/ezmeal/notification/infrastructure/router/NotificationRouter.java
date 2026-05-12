@@ -35,41 +35,22 @@ public class NotificationRouter {
     private final SlackChannelSender slackSender;
     private final UserClient userClient;
 
-    /*
-     [테스트 전용] local 프로필 설정시 활성화
-     private final Environment environment;
-     @Value("${notification.test.target-email:}")
-     private String testTargetEmail;
-     @PostConstruct
-     void validateTestEmailConfig() {
-         if (StringUtils.hasText(testTargetEmail)) {
-             boolean isSafeProfile = Arrays.stream(environment.getActiveProfiles())
-                     .anyMatch(p -> p.equals("local") || p.equals("test"));
-             if (!isSafeProfile) {
-                 throw new IllegalStateException(
-                         "notification.test.target-email은 local/test 프로필에서만 허용됩니다.");
-             }
-         }
-     }
-     */
-
-
+    /**
+     * 알림 타입 기반으로 채널 결정 후 발송
+     * 예외를 NotificationSagaDispatcher 로 전파(FAILED 로 마킹)
+     * */
     public void route(Notification notification) {
         if (EMAIL_TYPES.contains(notification.getType())) {
-            try {
-                String email = userClient.getUser(notification.getUserId()).getData().getEmail();
-                // [테스트 전용] local 프로필 이메일 우회 시 아래로 교체
-                // String email = StringUtils.hasText(testTargetEmail)
-                //         ? testTargetEmail
-                //         : userClient.getUser(notification.getUserId()).getData().getEmail();
-                emailSender.send(notification, email);
-            } catch (Exception e) {
-                log.error("[EMAIL-FAIL] userId={}, type={}, error={}",
-                        notification.getUserId(), notification.getType(), e.getMessage());
-                // Email 실패해도 DB 저장은 보장 (sentAt = null 유지)
-            }
+            String email = userClient.getUser(notification.getUserId()).getData().getEmail();
+            emailSender.send(notification, email);
         } else {
             slackSender.send(notification, null);
         }
     }
+
+    // Saga fallback 전용 — 타입과 무관하게 강제 Slack 발송
+    public void routeToSlack(Notification notification) {
+        slackSender.send(notification, null);
+    }
+
 }
