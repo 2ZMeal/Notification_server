@@ -17,7 +17,7 @@ import org.springframework.stereotype.Component;
 public class PaymentEventConsumerImpl extends AbstractNotificationConsumer
         implements PaymentEventConsumer {
 
-    @KafkaListener(topics = "payment.success", groupId = "${spring.kafka.consumer.group-id}")
+    @KafkaListener(topics = "payment.completed", groupId = "${spring.kafka.consumer.group-id}")
     @Override
     public void onPaymentSuccess(EventEnvelope<PaymentSuccessPayload> event) {
         PaymentSuccessPayload payload = event.payload();

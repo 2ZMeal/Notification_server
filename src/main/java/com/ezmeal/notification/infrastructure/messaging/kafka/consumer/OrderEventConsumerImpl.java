@@ -16,7 +16,7 @@ import org.springframework.stereotype.Component;
 public class OrderEventConsumerImpl extends AbstractNotificationConsumer
         implements OrderEventConsumer {
 
-    @KafkaListener(topics = "order.status", groupId = "${spring.kafka.consumer.group-id}")
+    @KafkaListener(topics = "order.status.changed", groupId = "${spring.kafka.consumer.group-id}")
     @Override
     public void onOrderStatus(EventEnvelope<OrderStatusPayload> event) {
         OrderStatusPayload payload = event.payload();
@@ -25,7 +25,7 @@ public class OrderEventConsumerImpl extends AbstractNotificationConsumer
                 NotificationType.ORDER_STATUS_CHANGED, msg, NotificationChannel.EMAIL);
     }
 
-    @KafkaListener(topics = "order.reviewed", groupId = "${spring.kafka.consumer.group-id}")
+    @KafkaListener(topics = "order.completed", groupId = "${spring.kafka.consumer.group-id}")
     @Override
     public void onOrderReviewed(EventEnvelope<OrderReviewedPayload> event) {
         handleEvent(event.eventId(), event.payload().getUserId(),
