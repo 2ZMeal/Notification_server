@@ -45,6 +45,7 @@ public class Notification extends BaseEntity {
         n.type = type;
         n.message = message;
         n.channel = channel;
+        n.setSystemCreated();
         return n;
     }
 

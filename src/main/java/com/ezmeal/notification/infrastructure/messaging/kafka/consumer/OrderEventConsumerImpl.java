@@ -1,58 +1,34 @@
 package com.ezmeal.notification.infrastructure.messaging.kafka.consumer;
 
-import com.ezmeal.notification.domain.entity.Notification;
+import com.ezmeal.common.message.EventEnvelope;
 import com.ezmeal.notification.domain.entity.NotificationChannel;
 import com.ezmeal.notification.domain.entity.NotificationType;
 import com.ezmeal.notification.domain.event.OrderEventConsumer;
+import com.ezmeal.notification.domain.event.consumer.AbstractNotificationConsumer;
 import com.ezmeal.notification.domain.event.payload.OrderReviewedPayload;
 import com.ezmeal.notification.domain.event.payload.OrderStatusPayload;
-import com.ezmeal.notification.domain.repository.NotificationRepository;
-import com.ezmeal.notification.infrastructure.router.NotificationRouter;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.stereotype.Component;
 
 @Component
-@RequiredArgsConstructor
 @Slf4j
-public class OrderEventConsumerImpl implements OrderEventConsumer {
+public class OrderEventConsumerImpl extends AbstractNotificationConsumer
+        implements OrderEventConsumer {
 
-    private final ObjectMapper objectMapper;
-    private final NotificationRepository notificationRepository;
-    private final NotificationRouter notificationRouter;
-
-    @KafkaListener(topics = "order.status", groupId = "${spring.kafka.consumer.group-id}")
+    @KafkaListener(topics = "order.status.changed", groupId = "${spring.kafka.consumer.group-id}")
     @Override
-    public void onOrderStatus(String message) {
-        try {
-            OrderStatusPayload payload = objectMapper.readValue(message, OrderStatusPayload.class);
-            String msg = "주문 상태가 변경되었습니다: " + payload.getStatus();
-            Notification notification = Notification.create(
-                    payload.getUserId(), NotificationType.ORDER_STATUS_CHANGED,
-                    msg, NotificationChannel.EMAIL
-            );
-            notificationRepository.save(notification);
-            notificationRouter.route(notification);
-        } catch (Exception e) {
-            log.error("[KAFKA-ERROR] order.status 처리 실패: {}", e.getMessage());
-        }
+    public void onOrderStatus(EventEnvelope<OrderStatusPayload> event) {
+        OrderStatusPayload payload = event.payload();
+        String msg = "주문 상태가 변경되었습니다: " + payload.getStatus();
+        handleEvent(event.eventId(), payload.getUserId(),
+                NotificationType.ORDER_STATUS_CHANGED, msg, NotificationChannel.EMAIL);
     }
 
-    @KafkaListener(topics = "order.reviewed", groupId = "${spring.kafka.consumer.group-id}")
+    @KafkaListener(topics = "order.completed", groupId = "${spring.kafka.consumer.group-id}")
     @Override
-    public void onOrderReviewed(String message) {
-        try {
-            OrderReviewedPayload payload = objectMapper.readValue(message, OrderReviewedPayload.class);
-            Notification notification = Notification.create(
-                    payload.getUserId(), NotificationType.ORDER_REVIEWED,
-                    "주문에 대한 리뷰를 남겨주세요.", NotificationChannel.SLACK
-            );
-            notificationRepository.save(notification);
-            notificationRouter.route(notification);
-        } catch (Exception e) {
-            log.error("[KAFKA-ERROR] order.reviewed 처리 실패: {}", e.getMessage());
-        }
+    public void onOrderReviewed(EventEnvelope<OrderReviewedPayload> event) {
+        handleEvent(event.eventId(), event.payload().getUserId(),
+                NotificationType.ORDER_REVIEWED, "주문에 대한 리뷰를 남겨주세요.", NotificationChannel.SLACK);
     }
 }
